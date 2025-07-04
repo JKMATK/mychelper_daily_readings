@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node src/index.ts"
+    "dev": "ts-node src/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -13,11 +13,13 @@
   "dependencies": {
     "@apollo/server": "^4.12.2",
     "@apollo/subgraph": "^2.11.2",
+    "@prisma/client": "^6.11.1",
     "graphql": "^16.11.0",
     "graphql-tag": "^2.12.6"
   },
   "devDependencies": {
     "@types/node": "^24.0.10",
+    "prisma": "^6.11.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }

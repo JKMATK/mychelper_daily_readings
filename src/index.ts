@@ -1,31 +1,20 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { buildSubgraphSchema } from '@apollo/subgraph';
+import { PrismaClient } from './generated/prisma';
 import gql from 'graphql-tag';
 
-const typeDefs = gql`
-  type Reading {
-    id: ID!
-    title: String!
-    content: String!
-    date: String!
-  }
+const prisma = new PrismaClient();
 
+const typeDefs = gql`
   type Query {
-    dailyReadings: [Reading!]!
+    _empty: String
   }
 `;
 
 const resolvers = {
   Query: {
-    dailyReadings: () => [
-      {
-        id: '1',
-        title: 'Genesis 1',
-        content: 'In the beginning...',
-        date: '2025-07-04',
-      },
-    ],
+    
   },
 };
 
