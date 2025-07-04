@@ -1,7 +1,7 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import { buildSubgraphSchema } from '@apollo/subgraph';
-import { PrismaClient } from './generated/prisma';
+import { PrismaClient } from '@prisma/client';
 import gql from 'graphql-tag';
 
 const prisma = new PrismaClient();
