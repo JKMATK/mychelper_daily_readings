@@ -12,3 +12,55 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum PlanType {
+  liturgical
+  custom
+}
+
+model Church {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  readingSchedules ReadingSchedule[]
+
+  @@map("churches")
+}
+
+model ReadingSchedule {
+  id                String    @id @default(uuid()) @db.Uuid
+  createdByChurchId String   @map("created_by_church_id") @db.Uuid
+  name              String
+  description       String?
+  planType          PlanType  @map("plan_type")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  church            Church?   @relation(fields: [createdByChurchId], references: [id])
+  entries           DailyReadingEntry[]
+
+  @@map("daily_readings")
+}
+
+model DailyReadingEntry {
+  id             String   @id @default(uuid()) @db.Uuid
+  readingPlanId  String   @map("reading_plan_id") @db.Uuid
+  sortOrder      Int      @default(0) @map("sort_order")
+  date           DateTime @db.Date
+  type           String
+  references     String[] // Array of text references
+  content        String?
+  mediaUrl       String?  @map("media_url")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  readingPlan    ReadingSchedule @relation(fields: [readingPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([readingPlanId, date, sortOrder])
+  @@map("daily_reading_entries")
+}
