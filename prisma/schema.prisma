@@ -51,10 +51,9 @@ model DailyReadingEntry {
   readingPlanId  String   @map("reading_plan_id") @db.Uuid
   sortOrder      Int      @default(0) @map("sort_order")
   date           DateTime @db.Date
-  type           String
-  references     String[] // Array of text references
-  content        String?
-  mediaUrl       String?  @map("media_url")
+  type           String   // "scripture" or "text"
+  references     String[] // Array of scripture references (e.g., ["JHN1.1"]) - only for scripture type
+  content        String?  // Text content - only for text type
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 

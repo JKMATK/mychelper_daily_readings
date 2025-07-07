@@ -4,7 +4,11 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "ts-node src/index.ts"
+    "dev": "ts-node src/index.ts",
+    "seed": "ts-node src/scripts/seedDatabase.ts",
+    "db:seed": "npm run seed",
+    "db:reset": "npx prisma db push --force-reset && npm run seed",
+    "db:setup": "npx prisma generate && npx prisma db push && npm run seed"
   },
   "keywords": [],
   "author": "",
