@@ -5,10 +5,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "ts-node src/index.ts",
+    "build": "tsc",
     "seed": "ts-node src/scripts/seedDatabase.ts",
     "db:seed": "npm run seed",
     "db:reset": "npx prisma db push --force-reset && npm run seed",
-    "db:setup": "npx prisma generate && npx prisma db push && npm run seed"
+    "db:setup": "sh -c 'npx prisma generate && npx prisma db push && npm run seed'"
   },
   "keywords": [],
   "author": "",
@@ -20,12 +21,12 @@
     "@prisma/client": "^6.11.1",
     "dotenv": "^17.1.0",
     "graphql": "^16.11.0",
-    "graphql-tag": "^2.12.6"
+    "graphql-tag": "^2.12.6",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@types/node": "^24.0.10",
     "prisma": "^6.11.1",
-    "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
 }
