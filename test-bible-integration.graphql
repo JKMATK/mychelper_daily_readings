@@ -1,0 +1,19 @@
+query DailyReadingsForChurch($churchId: ID!, $date: String!) {
+  dailyReadingsForChurch(churchId: $churchId, date: $date) {
+    schedule {
+      name
+    }
+    entries {
+      sortOrder
+      type
+      references
+      content
+      bibleContent {
+        reference
+        content
+        usfm
+      }
+    }
+    message
+  }
+} 

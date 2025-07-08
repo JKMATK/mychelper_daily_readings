@@ -1,4 +1,5 @@
 import prisma from '../database/prisma';
+import { BibleService } from '../services/bibleService';
 
 export const queryResolvers = {
   dailyReadingsForChurch: async (_: any, { churchId, date }: { churchId: string, date: string }) => {
@@ -50,10 +51,41 @@ export const queryResolvers = {
           }
         });
 
+        // Fetch Bible content for scripture entries
+        const bibleService = new BibleService();
+        const entriesWithBibleContent = await Promise.all(
+          entries.map(async (entry) => {
+            if (entry.type === 'scripture' && entry.references && entry.references.length > 0) {
+              try {
+                // Fetch Bible content for all references in this entry
+                const bibleContent = await bibleService.getMultipleScriptures(entry.references);
+                
+                return {
+                  ...entry,
+                  bibleContent: bibleContent // Add the Bible content to the entry
+                };
+              } catch (error) {
+                console.error(`Error fetching Bible content for entry ${entry.id}:`, error);
+                // Return entry without Bible content if there's an error
+                return {
+                  ...entry,
+                  bibleContent: []
+                };
+              }
+            } else {
+              // For non-scripture entries, return as-is
+              return {
+                ...entry,
+                bibleContent: []
+              };
+            }
+          })
+        );
+
         return {
           type: 'custom',
           schedule: readingSchedule,
-          entries: entries,
+          entries: entriesWithBibleContent,
           date: date
         };
       }

@@ -214,12 +214,10 @@ export class BibleService {
   private parseReference(reference: string, bookContext?: string): ParsedReference {
     // Remove extra whitespace and normalize
     const cleanRef = reference.trim().replace(/\s+/g, ' ');
-    console.log('DEBUG: Cleaned reference:', cleanRef);
 
     // 1. Compact pattern: e.g. 'GEN1.1-3', 'gen.1.1-3', 'gen 1.1-3' (case-insensitive)
     const compactPattern = /^([A-Za-z]+)[. ]?(\d+)\.(\d+)(?:-(\d+))?$/i;
     const compactMatch = cleanRef.match(compactPattern);
-    console.log('DEBUG: Compact pattern match:', compactMatch);
     if (compactMatch) {
       let [, book, chapter, verse, endVerse] = compactMatch;
       book = book.toLowerCase(); // Normalize to lowercase for mapping

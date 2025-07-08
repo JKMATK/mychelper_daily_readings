@@ -28,6 +28,12 @@ export const typeDefs = gql`
     updatedAt: String!
   }
 
+  type BibleVerse {
+    usfm: String!
+    reference: String!
+    content: String!
+  }
+
   type DailyReadingEntry {
     id: ID!
     sortOrder: Int!
@@ -35,6 +41,7 @@ export const typeDefs = gql`
     type: String!
     references: [String!]!
     content: String
+    bibleContent: [BibleVerse!]!
     createdAt: String!
     updatedAt: String!
     readingPlan: ReadingSchedule!
@@ -47,6 +54,7 @@ export const typeDefs = gql`
     type: String!
     references: [String!]!
     content: String
+    bibleContent: [BibleVerse!]!
     readingPlan: ReadingSchedule!
   }
 
