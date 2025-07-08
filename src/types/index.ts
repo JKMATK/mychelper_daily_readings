@@ -6,6 +6,7 @@ export const typeDefs = gql`
     name: String!
     createdAt: String!
     updatedAt: String!
+    currentReadingSchedule: ReadingSchedule
   }
 
   type ReadingSchedule {
@@ -17,6 +18,14 @@ export const typeDefs = gql`
     updatedAt: String!
     church: Church
     entries: [DailyReadingEntry!]!
+    apis: [LiturgicalReadingAPI!]
+  }
+
+  type LiturgicalReadingAPI {
+    id: ID!
+    apiURL: String!
+    createdAt: String!
+    updatedAt: String!
   }
 
   type DailyReadingEntry {
@@ -31,11 +40,6 @@ export const typeDefs = gql`
     readingPlan: ReadingSchedule!
   }
 
-  enum PlanType {
-    liturgical
-    custom
-  }
-
   type DailyReading {
     id: ID!
     sortOrder: Int!
@@ -46,12 +50,26 @@ export const typeDefs = gql`
     readingPlan: ReadingSchedule!
   }
 
+  # New response type for dailyReadingsForChurch
+  type DailyReadingsResponse {
+    type: String!
+    date: String!
+    schedule: ReadingSchedule!
+    entries: [DailyReadingEntry!]
+    message: String
+  }
+
+  enum PlanType {
+    liturgical
+    custom
+  }
+
   type Query {
     # Get daily readings for a specific church on a specific date
     dailyReadingsForChurch(
       churchId: ID!
       date: String!
-    ): [DailyReading!]!
+    ): DailyReadingsResponse!
     
     # Get all reading schedules for a church
     readingSchedulesForChurch(churchId: ID!): [ReadingSchedule!]!

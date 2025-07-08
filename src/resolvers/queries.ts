@@ -3,26 +3,60 @@ import prisma from '../database/prisma';
 export const queryResolvers = {
   dailyReadingsForChurch: async (_: any, { churchId, date }: { churchId: string, date: string }) => {
     try {
-      const entries = await prisma.dailyReadingEntry.findMany({
-        where: {
-          readingPlan: {
-            createdByChurchId: churchId
-          },
-          date: new Date(date)
-        },
+      // First, get the church and its assigned reading schedule
+      const church = await prisma.church.findUnique({
+        where: { id: churchId },
         include: {
-          readingPlan: {
+          currentReadingSchedule: {
             include: {
-              church: true
+              apis: true
             }
           }
-        },
-        orderBy: {
-          sortOrder: 'asc'
         }
       });
 
-      return entries;
+      if (!church) {
+        throw new Error('Church not found');
+      }
+
+      if (!church.currentReadingSchedule) {
+        throw new Error('Church has no assigned reading schedule');
+      }
+
+      const readingSchedule = church.currentReadingSchedule;
+
+      // Handle different plan types
+      if (readingSchedule.planType === 'liturgical') {
+        // For liturgical plans, return the API configuration
+        // The actual liturgical logic will be handled later
+        return {
+          type: 'liturgical',
+          schedule: readingSchedule,
+          message: 'Liturgical readings will be fetched from external API',
+          date: date
+        };
+      } else {
+        // For custom plans, fetch the daily reading entries
+        const entries = await prisma.dailyReadingEntry.findMany({
+          where: {
+            readingPlanId: readingSchedule.id,
+            date: new Date(date)
+          },
+          include: {
+            readingPlan: true
+          },
+          orderBy: {
+            sortOrder: 'asc'
+          }
+        });
+
+        return {
+          type: 'custom',
+          schedule: readingSchedule,
+          entries: entries,
+          date: date
+        };
+      }
     } catch (error) {
       console.error('Error fetching daily readings:', error);
       throw new Error('Failed to fetch daily readings');
@@ -31,21 +65,28 @@ export const queryResolvers = {
 
   readingSchedulesForChurch: async (_: any, { churchId }: { churchId: string }) => {
     try {
-      const schedules = await prisma.readingSchedule.findMany({
-        where: {
-          createdByChurchId: churchId
-        },
+      // Get the church and its current reading schedule
+      const church = await prisma.church.findUnique({
+        where: { id: churchId },
         include: {
-          church: true,
-          entries: {
-            orderBy: {
-              sortOrder: 'asc'
+          currentReadingSchedule: {
+            include: {
+              entries: {
+                orderBy: {
+                  sortOrder: 'asc'
+                }
+              },
+              apis: true
             }
           }
         }
       });
 
-      return schedules;
+      if (!church) {
+        throw new Error('Church not found');
+      }
+
+      return church.currentReadingSchedule ? [church.currentReadingSchedule] : [];
     } catch (error) {
       console.error('Error fetching reading schedules:', error);
       throw new Error('Failed to fetch reading schedules');
@@ -57,13 +98,14 @@ export const queryResolvers = {
       const church = await prisma.church.findUnique({
         where: { id },
         include: {
-          readingSchedules: {
+          currentReadingSchedule: {
             include: {
               entries: {
                 orderBy: {
                   sortOrder: 'asc'
                 }
-              }
+              },
+              apis: true
             }
           }
         }
@@ -80,13 +122,14 @@ export const queryResolvers = {
     try {
       const churches = await prisma.church.findMany({
         include: {
-          readingSchedules: {
+          currentReadingSchedule: {
             include: {
               entries: {
                 orderBy: {
                   sortOrder: 'asc'
                 }
-              }
+              },
+              apis: true
             }
           }
         }

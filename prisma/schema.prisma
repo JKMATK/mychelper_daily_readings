@@ -18,21 +18,26 @@ enum PlanType {
   custom
 }
 
+enum ContentType {
+  scripture
+  text
+}
+
 model Church {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
+  readingScheduleId String  @map("reading_schedule_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  readingSchedules ReadingSchedule[]
-
+  currentReadingSchedule   ReadingSchedule? @relation("ChurchCurrentSchedule", fields: [readingScheduleId], references: [id])
   @@map("churches")
 }
 
 model ReadingSchedule {
   id                String    @id @default(uuid()) @db.Uuid
-  createdByChurchId String   @map("created_by_church_id") @db.Uuid
+  createdByChurchId String?   @map("created_by_church_id") @db.Uuid
   name              String
   description       String?
   planType          PlanType  @map("plan_type")
@@ -40,8 +45,9 @@ model ReadingSchedule {
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  church            Church?   @relation(fields: [createdByChurchId], references: [id])
+  churchesUsing     Church[]  @relation("ChurchCurrentSchedule")
   entries           DailyReadingEntry[]
+  apis              LiturgicalReadingAPIs?
 
   @@map("daily_readings")
 }
@@ -51,7 +57,7 @@ model DailyReadingEntry {
   readingPlanId  String   @map("reading_plan_id") @db.Uuid
   sortOrder      Int      @default(0) @map("sort_order")
   date           DateTime @db.Date
-  type           String   // "scripture" or "text"
+  type           ContentType   // "scripture" or "text"
   references     String[] // Array of scripture references (e.g., ["JHN1.1"]) - only for scripture type
   content        String?  // Text content - only for text type
   createdAt      DateTime @default(now()) @map("created_at")
@@ -62,4 +68,18 @@ model DailyReadingEntry {
 
   @@unique([readingPlanId, date, sortOrder])
   @@map("daily_reading_entries")
+}
+
+model LiturgicalReadingAPIs {
+  id             String   @id @default(uuid()) @db.Uuid
+  readingPlanId  String   @map("reading_plan_id") @db.Uuid
+  apiURL         String   @map("api_url")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  readingPlan    ReadingSchedule @relation(fields: [readingPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([readingPlanId])
+  @@map("liturgical_reading_apis")
 }

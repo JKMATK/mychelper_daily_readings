@@ -1,46 +1,91 @@
-# Sample GraphQL Queries for Daily Readings API
-
-# 1. Get daily readings for a specific church on a specific date
-query GetDailyReadingsForChurch($churchId: ID!, $date: String!) {
+# Get daily readings for a specific church on a specific date
+# This will return either liturgical or custom readings based on the church's assigned plan
+query GetDailyReadingsForChurch($churchId: String!, $date: String!) {
   dailyReadingsForChurch(churchId: $churchId, date: $date) {
-    id
-    sortOrder
-    date
     type
-    references
-    content
-    readingPlan {
+    date
+    schedule {
       id
       name
       description
       planType
-      church {
+    }
+    # For custom plans, entries will be included
+    entries {
+      id
+      sortOrder
+      type
+      references
+      content
+    }
+    # For liturgical plans, message will be included
+    message
+  }
+}
+
+# Get a specific church with its current reading schedule
+query GetChurch($id: String!) {
+  church(id: $id) {
+    id
+    name
+    createdAt
+    updatedAt
+    currentReadingSchedule {
+      id
+      name
+      description
+      planType
+      entries {
         id
-        name
+        sortOrder
+        date
+        type
+        references
+        content
+      }
+      apis {
+        id
+        apiURL
       }
     }
   }
 }
 
-# Variables for the above query:
-# {
-#   "churchId": "your-church-uuid-here",
-#   "date": "2025-01-01"
-# }
+# Get all churches with their reading schedules
+query GetChurches {
+  churches {
+    id
+    name
+    createdAt
+    updatedAt
+    currentReadingSchedule {
+      id
+      name
+      description
+      planType
+      entries {
+        id
+        sortOrder
+        date
+        type
+        references
+        content
+      }
+      apis {
+        id
+        apiURL
+      }
+    }
+  }
+}
 
-# 2. Get all reading schedules for a church
-query GetReadingSchedulesForChurch($churchId: ID!) {
+# Get reading schedules for a specific church
+query GetReadingSchedulesForChurch($churchId: String!) {
   readingSchedulesForChurch(churchId: $churchId) {
     id
     name
     description
     planType
-    createdAt
-    updatedAt
-    church {
-      id
-      name
-    }
     entries {
       id
       sortOrder
@@ -49,86 +94,15 @@ query GetReadingSchedulesForChurch($churchId: ID!) {
       references
       content
     }
-  }
-}
-
-# Variables for the above query:
-# {
-#   "churchId": "your-church-uuid-here"
-# }
-
-# 3. Get a specific church with all its reading schedules
-query GetChurch($id: ID!) {
-  church(id: $id) {
-    id
-    name
-    createdAt
-    updatedAt
-    readingSchedules {
+    apis {
       id
-      name
-      description
-      planType
-      entries {
-        id
-        sortOrder
-        date
-        type
-        references
-        content
-      }
+      apiURL
     }
   }
 }
 
-# Variables for the above query:
+# Example variables for testing:
 # {
-#   "id": "your-church-uuid-here"
-# }
-
-# 4. Get all churches
-query GetAllChurches {
-  churches {
-    id
-    name
-    createdAt
-    updatedAt
-    readingSchedules {
-      id
-      name
-      description
-      planType
-      entries {
-        id
-        sortOrder
-        date
-        type
-        references
-        content
-      }
-    }
-  }
-}
-
-# 5. Simple query to get today's readings for a church
-query GetTodaysReadings($churchId: ID!) {
-  dailyReadingsForChurch(
-    churchId: $churchId, 
-    date: "2025-01-01"  # Replace with today's date in YYYY-MM-DD format
-  ) {
-    id
-    sortOrder
-    type
-    references
-    content
-    readingPlan {
-      name
-      description
-    }
-  }
-}
-
-# Variables for the above query:
-# {
-#   "churchId": "your-church-uuid-here"
+#   "churchId": "your-church-id-here",
+#   "date": "2025-01-01"
 # } 

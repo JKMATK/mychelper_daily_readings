@@ -1,17 +1,17 @@
 export const churches = [
   {
-    name: "St. Mary's Catholic Church",
+    name: "St. Mary & St. Joseph Coptic Orthodox Church"
   },
   {
-    name: "St. John's Episcopal Church",
+    name: "St. Mark Coptic Orthodox Church"
   },
   {
-    name: "Grace Lutheran Church",
+    name: "Grace Community Church"
   },
   {
-    name: "First Baptist Church",
+    name: "Faith Bible Church"
   },
   {
-    name: "Holy Trinity Orthodox Church",
+    name: "New Life Christian Fellowship"
   }
 ]; 

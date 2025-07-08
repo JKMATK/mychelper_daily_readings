@@ -3,6 +3,7 @@ export interface Church {
   name: string;
   createdAt: string;
   updatedAt: string;
+  currentReadingSchedule?: ReadingSchedule;
 }
 
 export interface ReadingSchedule {
@@ -14,6 +15,14 @@ export interface ReadingSchedule {
   updatedAt: string;
   church?: Church;
   entries: DailyReadingEntry[];
+  apis?: LiturgicalReadingAPI[];
+}
+
+export interface LiturgicalReadingAPI {
+  id: string;
+  apiURL: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DailyReadingEntry {
@@ -36,6 +45,15 @@ export interface DailyReading {
   references: string[];
   content?: string;
   readingPlan: ReadingSchedule;
+}
+
+// New response types for dailyReadingsForChurch
+export interface DailyReadingsResponse {
+  type: 'liturgical' | 'custom';
+  schedule: ReadingSchedule;
+  date: string;
+  entries?: DailyReadingEntry[];
+  message?: string;
 }
 
 export type PlanType = 'liturgical' | 'custom';
