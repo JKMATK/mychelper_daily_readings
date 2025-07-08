@@ -83,4 +83,5 @@ export const typeDefs = gql`
 `;
 
 // Export TypeScript types
-export * from './graphql'; 
+export * from './graphql';
+export * from './bible'; 

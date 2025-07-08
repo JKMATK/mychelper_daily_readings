@@ -9,5 +9,10 @@ export const config = {
   app: {
     name: 'Daily Readings Subgraph',
     version: '1.0.0'
+  },
+  youversion: {
+    apiKey: process.env.YOUVERSION_API_KEY || '',
+    baseUrl: 'https://api-dev.youversion.com/v1/bibles',
+    defaultVersion: 12
   }
 }; 

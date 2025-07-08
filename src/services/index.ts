@@ -1,0 +1,1 @@
+export { BibleService } from './bibleService'; 
