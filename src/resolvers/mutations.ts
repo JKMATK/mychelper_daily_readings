@@ -86,51 +86,29 @@ export const mutationResolvers = {
     }
   },
 
-  // 3. Add reading schedule by day, each day takes multiple blocks
+  // 3. Add reading schedule (without entries initially)
   addReadingSchedule: async (_: any, { 
     name, 
     description, 
     planType, 
-    dailyBlocks 
+    createdByChurchId 
   }: { 
     name: string, 
     description?: string, 
     planType: 'liturgical' | 'custom',
-    dailyBlocks: Array<{
-      date: string,
-      blocks: Array<{
-        sortOrder: number,
-        type: 'scripture' | 'text',
-        references?: string[],
-        content?: string
-      }>
-    }>
+    createdByChurchId?: string
   }) => {
     try {
-      // Create the reading schedule
+      // Create the reading schedule without entries
       const readingSchedule = await prisma.readingSchedule.create({
         data: {
           name,
           description,
           planType,
-          entries: {
-            create: dailyBlocks.flatMap(dayBlock => 
-              dayBlock.blocks.map(block => ({
-                sortOrder: block.sortOrder,
-                date: new Date(dayBlock.date),
-                type: block.type,
-                references: block.references || [],
-                content: block.content
-              }))
-            )
-          }
+          createdByChurchId
         },
         include: {
-          entries: {
-            orderBy: {
-              sortOrder: 'asc'
-            }
-          }
+          createdByChurch: true
         }
       });
 

@@ -146,12 +146,12 @@ export const typeDefs = gql`
       readingScheduleId: ID!
     ): ChurchResponse!
     
-    # Create a new reading schedule with daily blocks
+    # Create a new reading schedule (without entries initially)
     addReadingSchedule(
       name: String!
       description: String
       planType: PlanType!
-      dailyBlocks: [DayInput!]!
+      createdByChurchId: String
     ): ReadingScheduleResponse!
     
     # Add a single day to an existing reading schedule
