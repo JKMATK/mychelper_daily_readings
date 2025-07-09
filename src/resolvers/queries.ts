@@ -1,5 +1,6 @@
 import prisma from '../database/prisma';
 import { BibleService } from '../services/bibleService';
+import { LiturgicalService } from '../services/liturgicalService';
 
 export const queryResolvers = {
   dailyReadingsForChurch: async (_: any, { churchId, date }: { churchId: string, date: string }) => {
@@ -28,14 +29,50 @@ export const queryResolvers = {
 
       // Handle different plan types
       if (readingSchedule.planType === 'liturgical') {
-        // For liturgical plans, return the API configuration
-        // The actual liturgical logic will be handled later
-        return {
-          type: 'liturgical',
-          schedule: readingSchedule,
-          message: 'Liturgical readings will be fetched from external API',
-          date: date
-        };
+        // For liturgical plans, fetch from Katameros API
+        const liturgicalService = new LiturgicalService();
+        
+        try {
+          const liturgicalReadings = await liturgicalService.fetchLiturgicalReadings(date);
+          
+          // Fetch Bible content for scripture entries
+          const readingsWithBibleContent = await Promise.all(
+            liturgicalReadings.map(async (reading) => {
+              if (reading.type === 'scripture' && reading.references && reading.references.length > 0) {
+                try {
+                  // Fetch Bible content for all references in this entry
+                  const bibleContent = await liturgicalService.bibleService.getMultipleScriptures(reading.references);
+                  
+                  return {
+                    ...reading,
+                    bibleContent: bibleContent
+                  };
+                } catch (error) {
+                  console.error(`Error fetching Bible content for liturgical reading:`, error);
+                  return {
+                    ...reading,
+                    bibleContent: []
+                  };
+                }
+              } else {
+                return {
+                  ...reading,
+                  bibleContent: []
+                };
+              }
+            })
+          );
+          
+          return {
+            type: 'liturgical',
+            schedule: readingSchedule,
+            entries: readingsWithBibleContent,
+            date: date
+          };
+        } catch (error) {
+          console.error('Error fetching liturgical readings:', error);
+          throw new Error('Failed to fetch liturgical readings');
+        }
       } else {
         // For custom plans, fetch the daily reading entries
         const entries = await prisma.dailyReadingEntry.findMany({

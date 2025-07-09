@@ -1,1 +1,2 @@
-export { BibleService } from './bibleService'; 
+export { BibleService } from './bibleService';
+export { LiturgicalService } from './liturgicalService'; 
