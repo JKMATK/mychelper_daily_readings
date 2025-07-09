@@ -42,13 +42,21 @@ export class BibleService {
       
       // Clean up the content by removing extra whitespace and newlines
       if (data.content) {
-        data.content = data.content
-          .replace(/\\n/g, ' ')  // Replace \n with space
-          .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
-          .trim();               // Remove leading/trailing whitespace
+        data.content = this.extractTextFromHtml(data.content);
       }
       
-      return data;
+      // Extract book, chapter, verse from usfm (e.g., "MRK.9.33")
+      const usfmParts = data.usfm.split('.');
+      const bookCode = usfmParts[0];
+      const chapterNum = parseInt(usfmParts[1]);
+      const verseNum = parseInt(usfmParts[2]);
+      
+      return {
+        ...data,
+        book: bookCode,
+        chapter: chapterNum,
+        verse: verseNum
+      };
     } catch (error) {
       console.error(`Error fetching verse ${book} ${chapter}:${verse}:`, error);
       throw new Error(`Failed to fetch Bible verse: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -66,36 +74,65 @@ export class BibleService {
     version: number = this.config.defaultVersion
   ): Promise<BibleVerse[]> {
     try {
-      const url = `${this.config.baseUrl}/${version}/books/${book}/chapters/${chapter}/verses`;
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'Content-Type': 'application/json'
+      let allVerses: any[] = [];
+      let nextPageToken: string | null = null;
+      let url: string;
+      let response: Response;
+      let data: any;
+
+      // Fetch all pages to get all verses in the chapter
+      do {
+        url = nextPageToken 
+          ? `${this.config.baseUrl}/${version}/books/${book}/chapters/${chapter}/verses?page_token=${nextPageToken}`
+          : `${this.config.baseUrl}/${version}/books/${book}/chapters/${chapter}/verses`;
+
+        response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${this.config.apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          // If we get a 404 on subsequent pages, it means we've reached the end
+          if (response.status === 404 && nextPageToken) {
+            console.log(`📄 Reached end of chapter ${book} ${chapter} at page_token ${nextPageToken}`);
+            break;
+          }
+          throw new Error(`YouVersion API error: ${response.status} ${response.statusText}`);
         }
+
+        data = await response.json();
+
+        if (!data.data || !Array.isArray(data.data)) {
+          throw new Error('Invalid response format from YouVersion API');
+        }
+
+        allVerses.push(...data.data);
+
+        // Check if there are more pages using next_page_token
+        nextPageToken = data.next_page_token || null;
+      } while (nextPageToken);
+
+      // Clean up content for all verses and add expected properties
+      const cleanedVerses = allVerses.map((verse: any) => {
+        // Extract book, chapter, verse from usfm (e.g., "MRK.9.33")
+        const usfmParts = verse.usfm.split('.');
+        const book = usfmParts[0];
+        const chapter = parseInt(usfmParts[1]);
+        const verseNum = parseInt(usfmParts[2]);
+        
+        return {
+          ...verse,
+          book,
+          chapter,
+          verse: verseNum,
+          content: verse.content ? this.extractTextFromHtml(verse.content) : verse.content
+        };
       });
 
-      if (!response.ok) {
-        throw new Error(`YouVersion API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      
-      if (!data.data || !Array.isArray(data.data)) {
-        throw new Error('Invalid response format from YouVersion API');
-      }
-
-      // Clean up content for all verses
-      const cleanedVerses = data.data.map((verse: any) => ({
-        ...verse,
-        content: verse.content
-          ?.replace(/\\n/g, ' ')  // Replace \n with space
-          .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
-          .trim()               // Remove leading/trailing whitespace
-      }));
-
       // Filter verses based on the requested range
-      const filteredVerses = cleanedVerses.filter((verse: BibleVerse) => {
+      const filteredVerses = cleanedVerses.filter((verse: any) => {
         const verseNumber = parseInt(verse.usfm.split('.')[2]); // Use usfm to get verse number
         return verseNumber >= startVerse && verseNumber <= endVerse;
       });
@@ -159,14 +196,22 @@ export class BibleService {
         throw new Error('Invalid response format from YouVersion API');
       }
 
-      // Clean up content for all verses
-      const cleanedVerses = data.data.map((verse: any) => ({
-        ...verse,
-        content: verse.content
-          ?.replace(/\\n/g, ' ')  // Replace \n with space
-          .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
-          .trim()               // Remove leading/trailing whitespace
-      }));
+      // Clean up content for all verses and add expected properties
+      const cleanedVerses = data.data.map((verse: any) => {
+        // Extract book, chapter, verse from usfm (e.g., "MRK.9.33")
+        const usfmParts = verse.usfm.split('.');
+        const book = usfmParts[0];
+        const chapter = parseInt(usfmParts[1]);
+        const verseNum = parseInt(usfmParts[2]);
+        
+        return {
+          ...verse,
+          book,
+          chapter,
+          verse: verseNum,
+          content: verse.content ? this.extractTextFromHtml(verse.content) : verse.content
+        };
+      });
 
       return cleanedVerses;
     } catch (error) {
@@ -215,8 +260,8 @@ export class BibleService {
     // Remove extra whitespace and normalize
     const cleanRef = reference.trim().replace(/\s+/g, ' ');
 
-    // 1. Compact pattern: e.g. 'GEN1.1-3', 'gen.1.1-3', 'gen 1.1-3' (case-insensitive)
-    const compactPattern = /^([A-Za-z]+)[. ]?(\d+)\.(\d+)(?:-(\d+))?$/i;
+    // 1. Compact pattern: e.g. 'GEN1.1-3', '1PE5.1-14', 'gen.1.1-3', 'gen 1.1-3' (case-insensitive)
+    const compactPattern = /^([0-9]*[A-Za-z]+)[. ]?(\d+)\.(\d+)(?:-(\d+))?$/i;
     const compactMatch = cleanRef.match(compactPattern);
     if (compactMatch) {
       let [, book, chapter, verse, endVerse] = compactMatch;
@@ -406,13 +451,18 @@ export class BibleService {
   ): Promise<BibleVerse[]> {
     try {
       let allVerses: BibleVerse[] = [];
-      let page = 1;
-      let hasMorePages = true;
+      let nextPageToken: string | null = null;
+      let url: string;
+      let response: Response;
+      let data: any;
 
-      while (hasMorePages) {
-        const url = `${this.config.baseUrl}/${version}/books/${book}/chapters/${chapter}/verses?page=${page}`;
-        
-        const response = await fetch(url, {
+      // Fetch all pages to get all verses in the chapter
+      do {
+        url = nextPageToken 
+          ? `${this.config.baseUrl}/${version}/books/${book}/chapters/${chapter}/verses?page_token=${nextPageToken}`
+          : `${this.config.baseUrl}/${version}/books/${book}/chapters/${chapter}/verses`;
+
+        response = await fetch(url, {
           headers: {
             'Authorization': `Bearer ${this.config.apiKey}`,
             'Content-Type': 'application/json'
@@ -420,36 +470,60 @@ export class BibleService {
         });
 
         if (!response.ok) {
+          // If we get a 404 on subsequent pages, it means we've reached the end
+          if (response.status === 404 && nextPageToken) {
+            console.log(`📄 Reached end of chapter ${book} ${chapter} at page_token ${nextPageToken}`);
+            break;
+          }
           throw new Error(`YouVersion API error: ${response.status} ${response.statusText}`);
         }
 
-        const data = await response.json();
+        data = await response.json();
         
         if (!data.data || !Array.isArray(data.data)) {
           throw new Error('Invalid response format from YouVersion API');
         }
 
-        // Clean up content for all verses
-        const cleanedVerses = data.data.map((verse: any) => ({
-          ...verse,
-          content: verse.content
-            ?.replace(/\\n/g, ' ')  // Replace \n with space
-            .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
-            .trim()               // Remove leading/trailing whitespace
-        }));
+        // Clean up content for all verses and add expected properties
+        const cleanedVerses = data.data.map((verse: any) => {
+          // Extract book, chapter, verse from usfm (e.g., "MRK.9.33")
+          const usfmParts = verse.usfm.split('.');
+          const book = usfmParts[0];
+          const chapter = parseInt(usfmParts[1]);
+          const verseNum = parseInt(usfmParts[2]);
+          
+          return {
+            ...verse,
+            book,
+            chapter,
+            verse: verseNum,
+            content: verse.content ? this.extractTextFromHtml(verse.content) : verse.content
+          };
+        });
 
         allVerses.push(...cleanedVerses);
 
-        // Check if there are more pages
-        hasMorePages = data.data.length > 0 && data.data.length >= 100; // Assuming 100 is the page size
-        page++;
-      }
+        // Check if there are more pages using next_page_token
+        nextPageToken = data.next_page_token || null;
+      } while (nextPageToken);
 
       return allVerses;
     } catch (error) {
       console.error(`Error fetching all verses in chapter ${book} ${chapter}:`, error);
       throw new Error(`Failed to fetch all Bible verses: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Extract plain text from HTML content
+   */
+  private extractTextFromHtml(html: string): string {
+    // Remove HTML tags and extract text content
+    return html
+      .replace(/<[^>]*>/g, '') // Remove all HTML tags
+      .replace(/\\n/g, ' ')    // Replace \n with space
+      .replace(/\s+/g, ' ')    // Replace multiple spaces with single space
+      .trim();                 // Remove leading/trailing whitespace
   }
 
   /**

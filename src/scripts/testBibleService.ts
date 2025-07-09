@@ -1,94 +1,103 @@
+/**
+ * Test Bible Service Script
+ * 
+ * This script directly tests the Bible service to see why MRK9.33-41 is returning empty content.
+ * 
+ * USAGE:
+ * npx tsx src/scripts/testBibleService.ts
+ */
+
 import 'dotenv/config';
 import { BibleService } from '../services/bibleService';
 
 async function testBibleService() {
+  console.log('🧪 Testing Bible Service with MRK9.33-41\n');
+  
   try {
-    console.log('🧪 Testing BibleService...');
-    
     const bibleService = new BibleService();
     
-    // Test single verse
-    console.log('\n📖 Testing single verse (Genesis 1:3)...');
-    const singleVerse = await bibleService.getVerse('GEN', 1, 3);
-    console.log('Single verse result:', {
-      reference: singleVerse.reference,
-      content: singleVerse.content.substring(0, 100) + '...'
-    });
+    console.log('📖 Testing reference: MRK9.33-41');
     
-    // Test verse range
-    console.log('\n📖 Testing verse range (Genesis 1:1-3)...');
-    const verseRange = await bibleService.getVerseRange('GEN', 1, 1, 3);
-    console.log('Verse range result:', {
-      count: verseRange.length,
-      references: verseRange.map(v => v.reference)
-    });
+    // Test the parseReference method first
+    const testRef = 'MRK9.33-41';
+    console.log(`\n1. Testing parseReference for "${testRef}":`);
     
-    // Test scripture content parsing
-    console.log('\n📖 Testing scripture content parsing...');
-    const scriptureContent = await bibleService.getScriptureContent('Genesis 1:3');
-    console.log('Scripture content result:', {
-      reference: Array.isArray(scriptureContent) 
-        ? scriptureContent[0]?.reference 
-        : scriptureContent.reference
-    });
+    try {
+      // Access the private method using bracket notation
+      const parsed = (bibleService as any).parseReference(testRef);
+      console.log(`   ✅ Parsed successfully:`, parsed);
+    } catch (error) {
+      console.log(`   ❌ Parse failed:`, error);
+      return;
+    }
     
-    // Test your current format (GEN1.1-3)
-    console.log('\n📖 Testing your current format (GEN1.1-3)...');
-    const compactFormat = await bibleService.getScriptureContent('GEN1.1-3');
-    console.log('Compact format result:', {
-      count: Array.isArray(compactFormat) ? compactFormat.length : 1,
-      references: Array.isArray(compactFormat) 
-        ? compactFormat.map(v => v.reference)
-        : [compactFormat.reference]
-    });
+    // Test getting scripture content
+    console.log(`\n2. Testing getScriptureContent for "${testRef}":`);
     
-    // Test multiple references
-    console.log('\n📖 Testing multiple scripture references...');
-    const multipleScriptures = await bibleService.getMultipleScriptures([
-      'Genesis 1:1',
-      'John 3:16',
-      'Psalm 23:1'
-    ]);
-    console.log('Multiple scriptures result:', {
-      count: multipleScriptures.length,
-      references: multipleScriptures.map(v => v.reference)
-    });
+    try {
+      const content = await bibleService.getScriptureContent(testRef);
+      console.log(`   ✅ Content fetched successfully:`);
+      console.log(`   - Type: ${Array.isArray(content) ? 'array' : 'single'}`);
+      console.log(`   - Length: ${Array.isArray(content) ? content.length : 1}`);
+      
+      if (Array.isArray(content)) {
+        content.forEach((verse, index) => {
+          console.log(`   - Verse ${index + 1}: ${verse.book} ${verse.chapter}:${verse.verse} - "${verse.content?.substring(0, 50)}..."`);
+        });
+      } else {
+        console.log(`   - Single verse: ${content.book} ${content.chapter}:${content.verse} - "${content.content?.substring(0, 50)}..."`);
+      }
+    } catch (error) {
+      console.log(`   ❌ Content fetch failed:`, error);
+    }
     
-    // Test chapter reference
-    console.log('\n📖 Testing chapter reference (Genesis 1)...');
-    const chapterContent = await bibleService.getScriptureContent('Genesis 1');
-    console.log('Chapter content result:', {
-      count: Array.isArray(chapterContent) ? chapterContent.length : 1,
-      references: Array.isArray(chapterContent) 
-        ? chapterContent.slice(0, 3).map(v => v.reference)
-        : [chapterContent.reference]
-    });
+    // Test getting multiple scriptures
+    console.log(`\n3. Testing getMultipleScriptures for ["${testRef}"]:`);
     
-    // Test direct chapter fetching
-    console.log('\n📖 Testing direct chapter fetching (Genesis 1)...');
-    const directChapter = await bibleService.getChapter('GEN', 1);
-    console.log('Direct chapter result:', {
-      count: directChapter.length,
-      references: directChapter.slice(0, 3).map(v => v.reference)
-    });
+    try {
+      const multipleContent = await bibleService.getMultipleScriptures([testRef]);
+      console.log(`   ✅ Multiple scriptures fetched successfully:`);
+      console.log(`   - Length: ${multipleContent.length}`);
+      
+      multipleContent.forEach((verse, index) => {
+        console.log(`   - Verse ${index + 1}: ${verse.book} ${verse.chapter}:${verse.verse} - "${verse.content?.substring(0, 50)}..."`);
+      });
+    } catch (error) {
+      console.log(`   ❌ Multiple scriptures fetch failed:`, error);
+    }
     
-    // Test verse range with new efficient endpoint
-    console.log('\n📖 Testing verse range with efficient endpoint (Genesis 1:1-5)...');
-    const efficientRange = await bibleService.getVerseRange('GEN', 1, 1, 5);
-    console.log('Efficient range result:', {
-      count: efficientRange.length,
-      references: efficientRange.map(v => v.reference)
-    });
+    // Test individual verse fetching
+    console.log(`\n4. Testing individual verse fetching for Mark 9:33:`);
     
-    console.log('\n✅ BibleService tests completed successfully!');
+    try {
+      const singleVerse = await bibleService.getVerse('MRK', 9, 33);
+      console.log(`   ✅ Single verse fetched successfully:`);
+      console.log(`   - ${singleVerse.book} ${singleVerse.chapter}:${singleVerse.verse} - "${singleVerse.content?.substring(0, 50)}..."`);
+    } catch (error) {
+      console.log(`   ❌ Single verse fetch failed:`, error);
+    }
+    
+    // Test verse range fetching
+    console.log(`\n5. Testing verse range fetching for Mark 9:33-41:`);
+    
+    try {
+      const verseRange = await bibleService.getVerseRange('MRK', 9, 33, 41);
+      console.log(`   ✅ Verse range fetched successfully:`);
+      console.log(`   - Length: ${verseRange.length}`);
+      
+      verseRange.forEach((verse, index) => {
+        console.log(`   - Verse ${index + 1}: ${verse.book} ${verse.chapter}:${verse.verse} - "${verse.content?.substring(0, 50)}..."`);
+      });
+    } catch (error) {
+      console.log(`   ❌ Verse range fetch failed:`, error);
+    }
     
   } catch (error) {
-    console.error('❌ BibleService test failed:', error);
-    process.exit(1);
+    console.error('❌ Bible service initialization failed:', error);
   }
+  
+  console.log('\n✅ Test completed!');
 }
 
-// Run the test if this file is executed directly
-if (require.main === module) {
-  testBibleService();
-} 
+// Run the test
+testBibleService(); 

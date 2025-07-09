@@ -111,6 +111,29 @@ export class LiturgicalService {
   }
 
   /**
+   * Split comma-separated references into individual references
+   * Handles cases like "PSA132.9,10,1,2" -> ["PSA132.9", "PSA132.10", "PSA132.1", "PSA132.2"]
+   */
+  private splitCommaSeparatedReferences(reference: string): string[] {
+    // Check if reference contains commas
+    if (!reference.includes(',')) {
+      return [reference];
+    }
+    
+    // Extract book and chapter from the reference
+    const match = reference.match(/^([A-Z]+)(\d+)\.(.+)$/);
+    if (!match) {
+      return [reference]; // Return as-is if we can't parse it
+    }
+    
+    const [, book, chapter, versesPart] = match;
+    const verses = versesPart.split(',').map(v => v.trim());
+    
+    // Create individual references
+    return verses.map(verse => `${book}${chapter}.${verse}`);
+  }
+
+  /**
    * Helper function to convert book names to codes
    */
   private getBookCode(bookName: string): string {
@@ -191,18 +214,23 @@ export class LiturgicalService {
                       const ref = passage.ref.replace(':', '.');
                       const formattedRef = `${bookCode}${ref}`;
                       
-                      rawData.push({
-                        date: date,
-                        apiDate: apiDate,
-                        sortOrder: sortOrder++,
-                        section: section.title || 'Unknown',
-                        subSection: subSection.title || 'Unknown',
-                        bookTranslation: passage.bookTranslation,
-                        ref: passage.ref,
-                        bookCode: bookCode,
-                        formattedRef: formattedRef,
-                        contentType: 'scripture',
-                        content: null
+                      // Split comma-separated references into individual references
+                      const individualRefs = this.splitCommaSeparatedReferences(formattedRef);
+                      
+                      individualRefs.forEach((individualRef) => {
+                        rawData.push({
+                          date: date,
+                          apiDate: apiDate,
+                          sortOrder: sortOrder++,
+                          section: section.title || 'Unknown',
+                          subSection: subSection.title || 'Unknown',
+                          bookTranslation: passage.bookTranslation,
+                          ref: passage.ref,
+                          bookCode: bookCode,
+                          formattedRef: individualRef,
+                          contentType: 'scripture',
+                          content: null
+                        });
                       });
                     }
                   });

@@ -48,7 +48,8 @@ export const queryResolvers = {
                     bibleContent: bibleContent
                   };
                 } catch (error) {
-                  console.error(`Error fetching Bible content for liturgical reading:`, error);
+                  console.error(`Error fetching Bible content for liturgical reading ${reading.references.join(', ')}:`, error);
+                  // Return reading without Bible content if there's an error
                   return {
                     ...reading,
                     bibleContent: []

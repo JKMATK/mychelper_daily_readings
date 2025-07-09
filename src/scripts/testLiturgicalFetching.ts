@@ -9,6 +9,7 @@
  * EXAMPLE:
  * npx tsx src/scripts/testLiturgicalFetching.ts 2025-01-15
  */
+import 'dotenv/config';
 import { LiturgicalService } from '../services/liturgicalService';
 
 async function testLiturgicalFetching(date?: string) {
