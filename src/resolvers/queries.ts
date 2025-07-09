@@ -125,6 +125,31 @@ export const queryResolvers = {
     }
   },
 
+  readingSchedules: async (_: any) => {
+    try {
+      // Get all reading schedules
+      const readingSchedules = await prisma.readingSchedule.findMany({
+        include: {
+          entries: {
+            orderBy: {
+              sortOrder: 'asc'
+            }
+          },
+          apis: true,
+          createdByChurch: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      return readingSchedules;
+    } catch (error) {
+      console.error('Error fetching reading schedules:', error);
+      throw new Error('Failed to fetch reading schedules');
+    }
+  },
+
   church: async (_: any, { id }: { id: string }) => {
     try {
       const church = await prisma.church.findUnique({

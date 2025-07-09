@@ -13,6 +13,7 @@ export interface ReadingSchedule {
   planType: 'liturgical' | 'custom';
   createdAt: string;
   updatedAt: string;
+  createdByChurchId: string;
   church?: Church;
   entries: DailyReadingEntry[];
   apis?: LiturgicalReadingAPI[];
@@ -71,3 +72,5 @@ export interface ReadingSchedulesForChurchInput {
 export interface ChurchInput {
   id: string;
 } 
+
+export interface ReadingSchedules {}

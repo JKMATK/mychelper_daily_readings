@@ -1,0 +1,156 @@
+# 1. Add a new church
+mutation AddChurch {
+  addChurch(name: "Grace Community Church") {
+    success
+    message
+    church {
+      id
+      name
+      currentReadingSchedule {
+        id
+        name
+      }
+    }
+  }
+}
+
+# 2. Update church's reading schedule
+mutation UpdateChurchReadingSchedule($churchId: ID!, $readingScheduleId: ID!) {
+  updateChurchReadingSchedule(
+    churchId: $churchId
+    readingScheduleId: $readingScheduleId
+  ) {
+    success
+    message
+    church {
+      id
+      name
+      currentReadingSchedule {
+        id
+        name
+        entries {
+          sortOrder
+          type
+          references
+          content
+        }
+      }
+    }
+  }
+}
+
+# 3. Create a new reading schedule with daily blocks
+mutation AddReadingSchedule {
+  addReadingSchedule(
+    name: "Advent 2024"
+    description: "Daily readings for the Advent season"
+    planType: custom
+    dailyBlocks: [
+      {
+        date: "2024-12-01"
+        blocks: [
+          {
+            sortOrder: 1
+            type: text
+            content: "<h3>First Sunday of Advent</h3><p>Today we begin our journey through Advent...</p>"
+          }
+          {
+            sortOrder: 2
+            type: scripture
+            references: ["ISA9.1-7"]
+          }
+          {
+            sortOrder: 3
+            type: text
+            content: "<p><strong>Reflection:</strong> As we wait for Christ's coming...</p>"
+          }
+        ]
+      }
+      {
+        date: "2024-12-02"
+        blocks: [
+          {
+            sortOrder: 1
+            type: text
+            content: "<h3>Day 2: Hope</h3><p>Today we focus on the hope of Christ...</p>"
+          }
+          {
+            sortOrder: 2
+            type: scripture
+            references: ["JER33.14-16"]
+          }
+          {
+            sortOrder: 3
+            type: text
+            content: "<p><strong>Prayer:</strong> Lord, help us to hope in Your promises...</p>"
+          }
+        ]
+      }
+    ]
+  ) {
+    success
+    message
+    readingSchedule {
+      id
+      name
+      description
+      planType
+      entries {
+        sortOrder
+        date
+        type
+        references
+        content
+      }
+    }
+  }
+}
+
+# 4. Add a single day to an existing reading schedule
+mutation AddDayToReadingSchedule($readingScheduleId: ID!) {
+  addDayToReadingSchedule(
+    readingScheduleId: $readingScheduleId
+    date: "2024-12-03"
+    blocks: [
+      {
+        sortOrder: 1
+        type: text
+        content: "<h3>Day 3: Peace</h3><p>Today we focus on the peace that Christ brings...</p>"
+      }
+      {
+        sortOrder: 2
+        type: scripture
+        references: ["ISA11.1-10"]
+      }
+      {
+        sortOrder: 3
+        type: text
+        content: "<p><strong>Reflection:</strong> How does Christ bring peace to your life?</p>"
+      }
+    ]
+  ) {
+    success
+    message
+    entries {
+      sortOrder
+      date
+      type
+      references
+      content
+    }
+  }
+}
+
+# 5. Delete a reading schedule
+mutation DeleteReadingSchedule($readingScheduleId: ID!) {
+  deleteReadingSchedule(readingScheduleId: $readingScheduleId) {
+    success
+    message
+  }
+}
+
+# Example variables for testing:
+# {
+#   "churchId": "your-church-id",
+#   "readingScheduleId": "your-reading-schedule-id"
+# } 

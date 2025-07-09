@@ -26,12 +26,13 @@ enum ContentType {
 model Church {
   id        String   @id @default(uuid()) @db.Uuid
   name      String
-  readingScheduleId String  @map("reading_schedule_id") @db.Uuid
+  readingScheduleId String?  @map("reading_schedule_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   currentReadingSchedule   ReadingSchedule? @relation("ChurchCurrentSchedule", fields: [readingScheduleId], references: [id])
+  createdReadingSchedules  ReadingSchedule[] @relation("ChurchCreatedSchedule")
   @@map("churches")
 }
 
@@ -46,6 +47,7 @@ model ReadingSchedule {
 
   // Relations
   churchesUsing     Church[]  @relation("ChurchCurrentSchedule")
+  createdByChurch   Church?   @relation("ChurchCreatedSchedule", fields: [createdByChurchId], references: [id])
   entries           DailyReadingEntry[]
   apis              LiturgicalReadingAPIs?
 
