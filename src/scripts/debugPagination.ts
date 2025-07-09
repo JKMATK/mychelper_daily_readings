@@ -96,13 +96,13 @@ async function debugPagination() {
     
     do {
       pageCount++;
-      const url = nextPageToken 
+      const url: string = nextPageToken 
         ? `${baseUrl}/${version}/books/${book}/chapters/${chapter}/verses?page_token=${nextPageToken}`
         : `${baseUrl}/${version}/books/${book}/chapters/${chapter}/verses`;
       
       console.log(`   📄 Page ${pageCount}: ${url}`);
       
-      const response = await fetch(url, {
+      const response: Response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
@@ -114,7 +114,7 @@ async function debugPagination() {
         break;
       }
       
-      const data = await response.json();
+      const data: any = await response.json();
       const verseCount = data.data?.length || 0;
       totalVerses += verseCount;
       allVerses.push(...(data.data || []));

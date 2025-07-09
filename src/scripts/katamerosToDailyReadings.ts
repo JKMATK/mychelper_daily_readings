@@ -10,13 +10,18 @@
  * - Sections: ONLY "Liturgy" sections (filters out Vespers, Matins, etc.)
  * - Content Types: introduction, scripture, conclusion
  * - Scripture Content: Set to null (ready for Bible service to populate)
- * - Text Content: Preserves actual liturgical text (introductions, conclusions)
+ * - Text Content: Preserves actual liturgical text (introductions, conclusions) with HTML beautification
  * - Sort Order: Resets to 1-20 for Liturgy entries (not preserving raw order)
  * - References: Formatted as "BOOK.CHAPTER.VERSE" (e.g., "2CO11.16-33")
  * 
+ * HTML BEAUTIFICATION:
+ * - Introductions: <div class="liturgical-intro"><h3>📖 Introduction</h3><p>content</p></div>
+ * - Conclusions: <div class="liturgical-conclusion"><h4>🙏 Conclusion</h4><p>content</p></div>
+ * - Scripture: <div class="scripture-reference"><h5>📜 Scripture</h5><p class="reference">reference</p></div>
+ * 
  * OUTPUT FILES:
  * - katameros-raw-data.json: Complete raw data from API (all sections)
- * - katameros-daily-readings.ts: Final schema format (Liturgy only)
+ * - katameros-daily-readings.ts: Final schema format (Liturgy only) with HTML formatting
  * 
  * USAGE:
  * npx tsx src/scripts/katamerosToDailyReadings.ts
@@ -44,6 +49,51 @@ interface DailyReading {
   type: string;
   references: string[];
   content: string | null;
+}
+
+// HTML Beautification Functions
+function beautifyIntroduction(content: string): string {
+  // Clean and format the introduction text
+  const cleanContent = content
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+  
+  return `<div class="liturgical-intro">
+  <h3>📖 Introduction</h3>
+  <p>${cleanContent}</p>
+</div>`;
+}
+
+function beautifyConclusion(content: string): string {
+  // Clean and format the conclusion text
+  const cleanContent = content
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+  
+  return `<div class="liturgical-conclusion">
+  <h4>🙏 Conclusion</h4>
+  <p>${cleanContent}</p>
+</div>`;
+}
+
+function beautifyScriptureReference(references: string[]): string {
+  if (references.length === 0) return '';
+  
+  const referenceList = references.map(ref => `<span class="reference">${ref}</span>`).join(', ');
+  
+  return `<div class="scripture-reference">
+  <h5>📜 Scripture Reading</h5>
+  <p class="reference">${referenceList}</p>
+</div>`;
+}
+
+function escapeHtmlContent(content: string): string {
+  return content
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 async function katamerosToDailyReadings(startDateStr?: string, endDateStr?: string) {
@@ -122,19 +172,32 @@ async function katamerosToDailyReadings(startDateStr?: string, endDateStr?: stri
     
     console.log('\n🔄 Transforming to DailyReadings schema...');
     
-    // Transform to DailyReadings format with specific filtering requirements
+    // Transform to DailyReadings format with specific filtering requirements and HTML beautification
     const dailyReadings: DailyReading[] = [];
     let newSortOrder = 1;
     
     allRawData.forEach((item) => {
       // FILTER: Only process "Liturgy" sections (exclude Vespers, Matins, etc.)
       if (item.section === 'Liturgy') {
+        let beautifiedContent: string | null = null;
+        
+        // Apply HTML beautification based on content type
+        if (item.contentType === 'introduction' && item.content) {
+          beautifiedContent = beautifyIntroduction(escapeHtmlContent(item.content));
+        } else if (item.contentType === 'conclusion' && item.content) {
+          beautifiedContent = beautifyConclusion(escapeHtmlContent(item.content));
+        } else if (item.contentType === 'scripture') {
+          // For scripture, we'll create a special formatted reference
+          const references = item.formattedRef ? [item.formattedRef] : [];
+          beautifiedContent = beautifyScriptureReference(references);
+        }
+        
         dailyReadings.push({
           sortOrder: newSortOrder++, // Reset sort order to 1-20 for Liturgy entries
           date: item.date,
           type: item.contentType, // introduction, scripture, or conclusion
           references: item.formattedRef ? [item.formattedRef] : [], // Scripture references only
-          content: item.contentType === 'scripture' ? null : item.content // null for scripture, actual text for others
+          content: beautifiedContent // Apply HTML beautification
         });
       }
     });
@@ -150,7 +213,7 @@ async function katamerosToDailyReadings(startDateStr?: string, endDateStr?: stri
       outputContent += `    date: '${reading.date}',\n`;
       outputContent += `    type: '${reading.type}',\n`;
       outputContent += `    references: [${reading.references.map(ref => `'${ref}'`).join(', ')}],\n`;
-      outputContent += `    content: ${reading.content ? `'${reading.content.replace(/'/g, "\\'")}'` : 'null'}\n`;
+      outputContent += `    content: ${reading.content ? `\`${reading.content.replace(/`/g, '\\`')}\`` : 'null'}\n`;
       outputContent += '  }' + (index < dailyReadings.length - 1 ? ',' : '') + '\n';
     });
     
@@ -158,12 +221,158 @@ async function katamerosToDailyReadings(startDateStr?: string, endDateStr?: stri
     
     fs.writeFileSync(outputPath, outputContent);
     
+    // Generate CSS file for styling the HTML content
+    const cssPath = path.join(__dirname, 'liturgical-styles.css');
+    const cssContent = `/* Liturgical Reading Styles */
+.liturgical-intro {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-left: 4px solid #007bff;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.liturgical-intro h3 {
+  color: #007bff;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.liturgical-conclusion {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border-left: 4px solid #ffc107;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.liturgical-conclusion h4 {
+  color: #856404;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.scripture-reference {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  border-left: 4px solid #28a745;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.scripture-reference h5 {
+  color: #155724;
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.reference {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  color: #155724;
+  background: rgba(255,255,255,0.7);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  margin: 0.1rem;
+}
+
+.liturgical-intro p,
+.liturgical-conclusion p {
+  margin: 0;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .liturgical-intro,
+  .liturgical-conclusion,
+  .scripture-reference {
+    padding: 0.75rem;
+    margin: 0.75rem 0;
+  }
+  
+  .liturgical-intro h3,
+  .liturgical-conclusion h4,
+  .scripture-reference h5 {
+    font-size: 1rem;
+  }
+}`;
+    
+    fs.writeFileSync(cssPath, cssContent);
+    
+    // Generate HTML preview file
+    const htmlPath = path.join(__dirname, 'liturgical-preview.html');
+    let htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liturgical Readings Preview</title>
+    <link rel="stylesheet" href="liturgical-styles.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #f8f9fa;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .sample-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📖 Liturgical Readings Preview</h1>
+        <p>Sample of beautified liturgical content with HTML formatting</p>
+    </div>
+    
+    <div class="sample-content">
+        <h2>Sample Entries:</h2>`;
+    
+    // Add sample entries to HTML preview
+    dailyReadings.slice(0, 5).forEach((reading, index) => {
+      htmlContent += `
+        <div style="margin-bottom: 2rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px;">
+            <h3>Entry ${index + 1} - ${reading.date} (${reading.type})</h3>
+            ${reading.content || '<p><em>No content</em></p>'}
+        </div>`;
+    });
+    
+    htmlContent += `
+    </div>
+</body>
+</html>`;
+    
+    fs.writeFileSync(htmlPath, htmlContent);
+    
     console.log('\n📊 Summary:');
     console.log(`   Total Days: ${totalDays}`);
     console.log(`   Total Raw Entries: ${allRawData.length}`);
     console.log(`   Liturgy Entries: ${dailyReadings.length}`);
     console.log(`   Raw data saved to: ${rawDataPath}`);
     console.log(`   DailyReadings saved to: ${outputPath}`);
+    console.log(`   CSS styles saved to: ${cssPath}`);
+    console.log(`   HTML preview saved to: ${htmlPath}`);
     
     console.log('\n🔄 DailyReadings.ts Schema Format (first 10 entries):\n');
     console.log('export const dailyReadings = [');
@@ -174,7 +383,7 @@ async function katamerosToDailyReadings(startDateStr?: string, endDateStr?: stri
       console.log(`    date: '${reading.date}',`);
       console.log(`    type: '${reading.type}',`);
       console.log(`    references: [${reading.references.map(ref => `'${ref}'`).join(', ')}],`);
-      console.log(`    content: ${reading.content ? `'${reading.content.substring(0, 50)}...'` : 'null'}`);
+      console.log(`    content: ${reading.content ? `'${reading.content.substring(0, 80)}...'` : 'null'}`);
       console.log('  }' + (index < Math.min(10, dailyReadings.length - 1) ? ',' : ''));
     });
     
@@ -184,12 +393,13 @@ async function katamerosToDailyReadings(startDateStr?: string, endDateStr?: stri
     
     console.log('];\n');
     
-    console.log('📖 Sample Entries:');
+    console.log('📖 Sample Entries (with HTML Beautification):');
     dailyReadings.slice(0, 10).forEach((reading, index) => {
       if (reading.type === 'scripture') {
         console.log(`   ${index + 1}. ${reading.date} - ${reading.type}: ${reading.references.join(', ')}`);
       } else {
-        console.log(`   ${index + 1}. ${reading.date} - ${reading.type}: ${reading.content?.substring(0, 40)}...`);
+        const contentPreview = reading.content ? reading.content.replace(/<[^>]*>/g, '').substring(0, 60) : 'No content';
+        console.log(`   ${index + 1}. ${reading.date} - ${reading.type}: ${contentPreview}...`);
       }
     });
     

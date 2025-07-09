@@ -1,0 +1,81 @@
+/* Liturgical Reading Styles */
+.liturgical-intro {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-left: 4px solid #007bff;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.liturgical-intro h3 {
+  color: #007bff;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.liturgical-conclusion {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border-left: 4px solid #ffc107;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.liturgical-conclusion h4 {
+  color: #856404;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.scripture-reference {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  border-left: 4px solid #28a745;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.scripture-reference h5 {
+  color: #155724;
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.reference {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  color: #155724;
+  background: rgba(255,255,255,0.7);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  margin: 0.1rem;
+}
+
+.liturgical-intro p,
+.liturgical-conclusion p {
+  margin: 0;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .liturgical-intro,
+  .liturgical-conclusion,
+  .scripture-reference {
+    padding: 0.75rem;
+    margin: 0.75rem 0;
+  }
+  
+  .liturgical-intro h3,
+  .liturgical-conclusion h4,
+  .scripture-reference h5 {
+    font-size: 1rem;
+  }
+}

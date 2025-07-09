@@ -2,6 +2,9 @@ export interface BibleVerse {
   usfm: string;
   reference: string;
   content: string;
+  book: string;
+  chapter: number;
+  verse: number;
 }
 
 export interface BibleServiceConfig {
