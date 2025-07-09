@@ -96,7 +96,7 @@ export class BibleService {
 
       // Filter verses based on the requested range
       const filteredVerses = cleanedVerses.filter((verse: BibleVerse) => {
-        const verseNumber = parseInt(verse.reference.split(':')[1]);
+        const verseNumber = parseInt(verse.usfm.split('.')[2]); // Use usfm to get verse number
         return verseNumber >= startVerse && verseNumber <= endVerse;
       });
 
