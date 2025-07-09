@@ -15,8 +15,8 @@ async function clearDatabase() {
   
   await prisma.liturgicalReadingAPIs.deleteMany();
   await prisma.dailyReadingEntry.deleteMany();
-  await prisma.readingSchedule.deleteMany();
   await prisma.church.deleteMany();
+  await prisma.readingSchedule.deleteMany();
   
   console.log('✅ Database cleared');
 }
