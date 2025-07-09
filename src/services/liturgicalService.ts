@@ -29,6 +29,51 @@ export class LiturgicalService {
     this.bibleService = new BibleService();
   }
 
+  // HTML Beautification Functions
+  private beautifyIntroduction(content: string): string {
+    // Clean and format the introduction text
+    const cleanContent = content
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+    
+    return `<div class="liturgical-intro">
+  <h3>📖 Introduction</h3>
+  <p>${this.escapeHtmlContent(cleanContent)}</p>
+</div>`;
+  }
+
+  private beautifyConclusion(content: string): string {
+    // Clean and format the conclusion text
+    const cleanContent = content
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+    
+    return `<div class="liturgical-conclusion">
+  <h4>🙏 Conclusion</h4>
+  <p>${this.escapeHtmlContent(cleanContent)}</p>
+</div>`;
+  }
+
+  private beautifyScriptureReference(references: string[]): string {
+    if (references.length === 0) return '';
+    
+    const referenceList = references.map(ref => `<span class="reference">${ref}</span>`).join(', ');
+    
+    return `<div class="scripture-reference">
+  <h5>📜 Scripture Reading</h5>
+  <p class="reference">${referenceList}</p>
+</div>`;
+  }
+
+  private escapeHtmlContent(content: string): string {
+    return content
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   /**
    * Fetch liturgical readings for a specific date from Katameros API
    */
@@ -50,19 +95,32 @@ export class LiturgicalService {
       const data = await response.json();
       const rawData = this.extractRawData(data, date, apiDate);
       
-      // Transform to DailyReadingEntry format with filtering for Liturgy sections only
+      // Transform to DailyReadingEntry format with filtering for Liturgy sections only and HTML beautification
       const dailyReadings: DailyReadingEntry[] = [];
       let newSortOrder = 1;
       
       rawData.forEach((item) => {
         // FILTER: Only process "Liturgy" sections (exclude Vespers, Matins, etc.)
         if (item.section === 'Liturgy') {
+          let beautifiedContent: string | null = null;
+          
+          // Apply HTML beautification based on content type
+          if (item.contentType === 'introduction' && item.content) {
+            beautifiedContent = this.beautifyIntroduction(item.content);
+          } else if (item.contentType === 'conclusion' && item.content) {
+            beautifiedContent = this.beautifyConclusion(item.content);
+          } else if (item.contentType === 'scripture') {
+            // For scripture, we'll create a special formatted reference
+            const references = item.formattedRef ? [item.formattedRef] : [];
+            beautifiedContent = this.beautifyScriptureReference(references);
+          }
+          
           dailyReadings.push({
             sortOrder: newSortOrder++, // Reset sort order to 1-20 for Liturgy entries
             date: item.date,
             type: item.contentType === 'scripture' ? 'scripture' : 'text',
             references: item.formattedRef ? [item.formattedRef] : [], // Scripture references only
-            content: item.contentType === 'scripture' ? null : item.content // null for scripture, actual text for others
+            content: beautifiedContent // Apply HTML beautification
           });
         }
       });
