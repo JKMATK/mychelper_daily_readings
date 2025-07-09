@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,73 +7,48 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum PlanType {
-  liturgical
-  custom
-}
-
-enum ContentType {
-  scripture
-  text
-}
-
 model Church {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String
-  readingScheduleId String  @map("reading_schedule_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id             String            @id @default(uuid()) @db.Uuid
+  name           String
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+  daily_readings ReadingSchedule[]
 
-  // Relations
-  currentReadingSchedule   ReadingSchedule? @relation("ChurchCurrentSchedule", fields: [readingScheduleId], references: [id])
   @@map("churches")
 }
 
 model ReadingSchedule {
-  id                String    @id @default(uuid()) @db.Uuid
-  createdByChurchId String?   @map("created_by_church_id") @db.Uuid
+  id                String              @id @default(uuid()) @db.Uuid
+  createdByChurchId String              @map("created_by_church_id") @db.Uuid
   name              String
   description       String?
-  planType          PlanType  @map("plan_type")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  churchesUsing     Church[]  @relation("ChurchCurrentSchedule")
+  planType          PlanType            @map("plan_type")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
   entries           DailyReadingEntry[]
-  apis              LiturgicalReadingAPIs?
+  churches          Church              @relation(fields: [createdByChurchId], references: [id])
 
   @@map("daily_readings")
 }
 
 model DailyReadingEntry {
-  id             String   @id @default(uuid()) @db.Uuid
-  readingPlanId  String   @map("reading_plan_id") @db.Uuid
-  sortOrder      Int      @default(0) @map("sort_order")
-  date           DateTime @db.Date
-  type           ContentType   // "scripture" or "text"
-  references     String[] // Array of scripture references (e.g., ["JHN1.1"]) - only for scripture type
-  content        String?  // Text content - only for text type
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  readingPlan    ReadingSchedule @relation(fields: [readingPlanId], references: [id], onDelete: Cascade)
+  id            String          @id @default(uuid()) @db.Uuid
+  readingPlanId String          @map("reading_plan_id") @db.Uuid
+  sortOrder     Int             @default(0) @map("sort_order")
+  date          DateTime        @db.Date
+  type          String
+  references    String[]
+  content       String?
+  media_url     String?
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  readingPlan   ReadingSchedule @relation(fields: [readingPlanId], references: [id], onDelete: Cascade)
 
   @@unique([readingPlanId, date, sortOrder])
   @@map("daily_reading_entries")
 }
 
-model LiturgicalReadingAPIs {
-  id             String   @id @default(uuid()) @db.Uuid
-  readingPlanId  String   @map("reading_plan_id") @db.Uuid
-  apiURL         String   @map("api_url")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  readingPlan    ReadingSchedule @relation(fields: [readingPlanId], references: [id], onDelete: Cascade)
-
-  @@unique([readingPlanId])
-  @@map("liturgical_reading_apis")
+enum PlanType {
+  liturgical
+  custom
 }
